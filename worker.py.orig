@@ -26,17 +26,9 @@ db = mysql.connector.connect(
 cursor = db.cursor(dictionary=True)
 
 
-# After DB connection, add a migration-safe check:
-cursor.execute("""
-    ALTER TABLE cries ADD COLUMN IF NOT EXISTS processed TINYINT(1) DEFAULT 0
-""")  # MySQL 8+; for older MySQL, run manually via migration instead
-
-cursor.execute("SELECT id, brand, cry FROM criestb WHERE processed = 0")
-rows = cursor.fetchall()
-
 # 1. Fetch unprocessed cries (simple version: no flag yet)
-#cursor.execute("SELECT id, brand, cry FROM cries")
-#rows = cursor.fetchall()
+cursor.execute("SELECT id, brand, cry FROM criestb")
+rows = cursor.fetchall()
 
 
 def get_topic(text):
@@ -95,7 +87,6 @@ for row in rows:
     cry_score = (1 - sentiment) * 50
 
     upsert_score(brand, topic, cry_score, sentiment)
-    cursor.execute("UPDATE criestb SET processed = 1 WHERE id = %s", (row["id"],))
 
     print(f"Processed: {brand} | {topic} | {cry_score}")
 

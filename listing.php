@@ -1,11 +1,13 @@
 <?php
 // listing.php - Ungizwe Brand Intelligence Listing
 
-$conn = new mysqli("localhost", "root", "", "ungizwedb");
+require_once __DIR__ . '/config.php';
 
+/*
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
+*/
 
 /* -------------------------
    INPUTS
@@ -233,7 +235,7 @@ $conn->close();
 
             <div class="progress mt-2">
               <div class="progress-bar bg-danger"
-                   style="width: <?= min($r['score'],100) ?>%">
+                   style="width: <?= (int) min($r['score'],100) ?>%">
               </div>
             </div>
 

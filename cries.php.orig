@@ -1,5 +1,4 @@
 <?php
-require_once __DIR__ . '/config.php';
 
 $recent_brands = [];
 
@@ -204,8 +203,7 @@ Please do not include confidential information, personal information, or defamat
         </div>
 
       </div>
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
-	<input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1" autocomplete="off">
+
     </form>
 
   </div>

@@ -1,12 +1,9 @@
 <?php
+$conn = new mysqli("localhost", "root", "", "ungizwedb");
 
-require_once __DIR__ . '/config.php';
-
-/*
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-*/
 
 $query = trim($_GET['q'] ?? '');
 
@@ -172,7 +169,7 @@ $avgScore = count($rows) ? round($total / count($rows)) : 0;
 
             <div class="progress mb-3">
               <div class="progress-bar bg-danger"
-                   style="width: <?= (int) min($row['score'],100) ?>%">
+                   style="width: <?= min($row['score'],100) ?>%">
               </div>
             </div>
 
@@ -196,7 +193,7 @@ $avgScore = count($rows) ? round($total / count($rows)) : 0;
               <button type="submit" class="btn btn-success btn-sm w-100">
                 👍 Agree with signal (<?= $row['num_supporting'] ?>)
               </button>
-		<input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+
             </form>
 
           </div>

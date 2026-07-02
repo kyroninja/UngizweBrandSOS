@@ -1,45 +1,54 @@
 <?php
-// DB connection settings
-$host = "localhost";
-$db   = "ungizwedb";
-$user = "root";
-$pass = "";
-$charset = "utf8mb4";
+require_once __DIR__ . '/config.php';
+csrf_token(); // ensure session/token exist
 
-// Create connection
-$conn = new mysqli($host, $user, $pass, $db);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-// Get POST data
-$brand = isset($_POST['brand']) ? trim($_POST['brand']) : '';
-$cry   = isset($_POST['cry']) ? trim($_POST['cry']) : '';
-
-// Basic validation
-if (empty($brand) || empty($cry)) {
-    die("Brand and Cry are required.");
-}
-
-if (!isset($_POST['consent'])) {
-    die("You must acknowledge the submission terms.");
-}
-
-// Prepare SQL (safe insert)
-$stmt = $conn->prepare("INSERT INTO criestb (brand, cry) VALUES (?, ?)");
-$stmt->bind_param("ss", $brand, $cry);
-
-// Execute
-if ($stmt->execute()) {
-    header("Location: http://localhost//UngizweBrandSOS/listing.php");
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: cries.php');
     exit();
-} else {
-    echo "Error: " . $stmt->error;
 }
 
-// Close connections
+if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    die('Invalid or expired form submission. Please refresh and try again.');
+}
+
+// Honeypot — bots fill hidden fields, humans don't
+if (!empty($_POST['website'])) {
+    header('Location: thank_you.html'); // silently pretend success
+    exit();
+}
+
+if (!rate_limit('submit_cry', 5, 600)) {
+    http_response_code(429);
+    die('You are submitting too quickly. Please wait a few minutes and try again.');
+}
+
+$brand = trim($_POST['brand'] ?? '');
+$cry   = trim($_POST['cry'] ?? '');
+
+if ($brand === '' || $cry === '') {
+    die('Brand and your experience are required.');
+}
+if (mb_strlen($brand) > 100 || mb_strlen($cry) > 4000) {
+    die('Submission too long. Please shorten your entry.');
+}
+if (empty($_POST['consent'])) {
+    die('You must acknowledge the submission terms.');
+}
+
+$conn = db_connect();
+$stmt = $conn->prepare('INSERT INTO cries (brand, cry) VALUES (?, ?)');
+$stmt->bind_param('ss', $brand, $cry);
+
+if ($stmt->execute()) {
+    $stmt->close();
+    $conn->close();
+    header('Location: thank_you.html');
+    exit();
+}
+
+error_log('submit_cry insert failed: ' . $stmt->error);
 $stmt->close();
 $conn->close();
-?>
+http_response_code(500);
+die('Something went wrong saving your submission. Please try again.');

@@ -1,50 +1,52 @@
 <?php
-// contact.php
+require_once __DIR__ . '/config.php';
 
-$conn = new mysqli("localhost", "root", "", "ungizwedb");
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.html#contact');
+    exit();
 }
 
-// Get form data
+if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    die('Invalid request. Please refresh and try again.');
+}
+
+if (!rate_limit('contact', 5, 600)) {
+    http_response_code(429);
+    die('Too many messages sent. Please try again later.');
+}
+
 $name    = trim($_POST['name'] ?? '');
 $email   = trim($_POST['email'] ?? '');
 $subject = trim($_POST['subject'] ?? '');
 $message = trim($_POST['message'] ?? '');
 
-// Basic validation
 if ($name === '' || $email === '' || $subject === '' || $message === '') {
-    die("All fields are required.");
+    die('All fields are required.');
 }
-
-// Optional: sanitize email
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die("Invalid email address.");
+    die('Invalid email address.');
+}
+if (mb_strlen($name) > 150 || mb_strlen($subject) > 200 || mb_strlen($message) > 5000) {
+    die('One or more fields exceed the maximum length.');
 }
 
-
-$stmt = $conn->prepare("
+$conn = db_connect();
+$stmt = $conn->prepare('
     INSERT INTO contact_messages (name, email, subject, message)
     VALUES (?, ?, ?, ?)
-");
-
-$stmt->bind_param("ssss", $name, $email, $subject, $message);
+');
+$stmt->bind_param('ssss', $name, $email, $subject, $message);
 
 if ($stmt->execute()) {
-
     $stmt->close();
     $conn->close();
-
-    // redirect back to thank you page or home
-    header("Location: thank_you.html");
+    header('Location: thank_you.html');
     exit();
-
-} else {
-
-    echo "Error saving message: " . $stmt->error;
-
-    $stmt->close();
-    $conn->close();
 }
-?>
+
+error_log('contact1.php insert failed: ' . $stmt->error);
+$stmt->close();
+$conn->close();
+http_response_code(500);
+die('Message could not be saved. Please try again.');

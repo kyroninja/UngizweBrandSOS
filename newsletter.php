@@ -1,70 +1,54 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "ungizwedb");
+require_once __DIR__ . '/config.php';
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../index.html');
+    exit();
 }
 
-// Get email
+if (!csrf_verify($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    die('Invalid request.');
+}
+
+if (!rate_limit('newsletter', 5, 600)) {
+    http_response_code(429);
+    die('Too many attempts. Please try again later.');
+}
+
 $email = trim($_POST['email'] ?? '');
 
-// Validate
-if ($email === '') {
-    die("Email is required.");
+if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    die('A valid email address is required.');
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die("Invalid email address.");
-}
+$conn = db_connect();
 
-/*
-Suggested table:
-
-CREATE TABLE newsletter_subscribers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE,
-    subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-*/
-
-// Check for duplicates
-$check = $conn->prepare("SELECT id FROM newsletter_subscribers WHERE email = ?");
-$check->bind_param("s", $email);
+$check = $conn->prepare('SELECT id FROM newsletter_subscribers WHERE email = ?');
+$check->bind_param('s', $email);
 $check->execute();
 $check->store_result();
 
 if ($check->num_rows > 0) {
     $check->close();
     $conn->close();
-
-    // already subscribed
-    header("Location: ../index.html?subscribed=already");
+    header('Location: ../index.html?subscribed=already');
     exit();
 }
-
 $check->close();
 
-// Insert new subscriber
-$stmt = $conn->prepare("
-    INSERT INTO newsletter_subscribers (email)
-    VALUES (?)
-");
-
-$stmt->bind_param("s", $email);
+$stmt = $conn->prepare('INSERT INTO newsletter_subscribers (email) VALUES (?)');
+$stmt->bind_param('s', $email);
 
 if ($stmt->execute()) {
-
     $stmt->close();
     $conn->close();
-
-    header("Location: ../index.html?subscribed=success");
+    header('Location: ../index.html?subscribed=success');
     exit();
-
-} else {
-
-    echo "Error: " . $stmt->error;
-
-    $stmt->close();
-    $conn->close();
 }
-?>
+
+error_log('newsletter.php insert failed: ' . $stmt->error);
+$stmt->close();
+$conn->close();
+http_response_code(500);
+die('Could not subscribe. Please try again.');
