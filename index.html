@@ -528,6 +528,8 @@ object-position: center 10%;">
           <!-- IMPORTANT: NO php-email-form CLASS -->
           <form action="contact1.php" method="post" data-aos="fade-up" data-aos-delay="200">
 
+            <input type="hidden" name="csrf_token" id="contactCsrfToken" value="">
+
             <div class="row gy-4">
 
               <div class="col-md-6">
@@ -665,3 +667,19 @@ object-position: center 10%;">
 
 <!-- Main JS File -->
 <script src="assets/js/main.js"></script>
+
+<!-- Fetch a CSRF token for the contact form on page load -->
+<script>
+  fetch('csrf_token.php', { credentials: 'same-origin' })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      var field = document.getElementById('contactCsrfToken');
+      if (field && data.csrf_token) {
+        field.value = data.csrf_token;
+      }
+    })
+    .catch(function () {
+      // Token fetch failed silently; the form will show contact1.php's
+      // "Invalid or expired form submission" error if the user submits.
+    });
+</script>
