@@ -31,7 +31,7 @@ cursor.execute("""
     ALTER TABLE cries ADD COLUMN IF NOT EXISTS processed TINYINT(1) DEFAULT 0
 """)  # MySQL 8+; for older MySQL, run manually via migration instead
 
-cursor.execute("SELECT id, brand, cry FROM criestb WHERE processed = 0")
+cursor.execute("SELECT id, brand, cry FROM cries WHERE processed = 0")
 rows = cursor.fetchall()
 
 # 1. Fetch unprocessed cries (simple version: no flag yet)
@@ -95,7 +95,7 @@ for row in rows:
     cry_score = (1 - sentiment) * 50
 
     upsert_score(brand, topic, cry_score, sentiment)
-    cursor.execute("UPDATE criestb SET processed = 1 WHERE id = %s", (row["id"],))
+    cursor.execute("UPDATE cries SET processed = 1 WHERE id = %s", (row["id"],))
 
     print(f"Processed: {brand} | {topic} | {cry_score}")
 

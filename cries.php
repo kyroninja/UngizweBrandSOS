@@ -1,10 +1,17 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+// Must run before any HTML output so the session cookie header can still be sent
+$csrfToken = csrf_token();
+
 $recent_brands = [];
 
 // Try Redis first
 try {
+    if (!class_exists('Redis')) {
+        throw new \RuntimeException('Redis extension not installed');
+    }
+
     $redis = new Redis();
 
     if ($redis->connect('127.0.0.1', 6379, 1)) {
@@ -21,16 +28,17 @@ try {
         }
     }
 
-} catch (Exception $e) {
-    // Redis unavailable
+} catch (\Throwable $e) {
+    // Redis unavailable or extension not installed
+    error_log('cries.php Redis lookup failed: ' . $e->getMessage());
 }
 
 // Fallback to MySQL
 if (empty($recent_brands)) {
 
-    $conn = new mysqli("localhost", "root", "", "ungizwedb");
+    $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
-    if (!$conn->connect_error) {
+    if ($conn && !$conn->connect_error) {
 
         $sql = "
             SELECT
@@ -204,7 +212,7 @@ Please do not include confidential information, personal information, or defamat
         </div>
 
       </div>
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 	<input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1" autocomplete="off">
     </form>
 

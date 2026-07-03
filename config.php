@@ -11,6 +11,7 @@ define('DB_PASS', getenv('UNGIZWE_DB_PASS') ?: '');
 
 // Never display raw errors to users in production
 ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 error_reporting(E_ALL);
 
 function db_connect(): mysqli

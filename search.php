@@ -2,11 +2,10 @@
 
 require_once __DIR__ . '/config.php';
 
-/*
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-*/
+$conn = db_connect();
+
+// Must run before any HTML output so the session cookie header can still be sent
+$csrfToken = csrf_token();
 
 $query = trim($_GET['q'] ?? '');
 
@@ -196,7 +195,7 @@ $avgScore = count($rows) ? round($total / count($rows)) : 0;
               <button type="submit" class="btn btn-success btn-sm w-100">
                 👍 Agree with signal (<?= $row['num_supporting'] ?>)
               </button>
-		<input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
+		<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
             </form>
 
           </div>
