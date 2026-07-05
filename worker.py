@@ -9,7 +9,10 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") 
 
-nltk.download("vader_lexicon")
+try:
+    nltk.data.find("sentiment/vader_lexicon.zip")
+except LookupError:
+    nltk.download("vader_lexicon")
 
 sia = SentimentIntensityAnalyzer()
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -17,10 +20,10 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 # DB connection
 db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="",
-    database="ungizwedb"
+    host=os.getenv("UNGIZWE_DB_HOST", "ungizwe_db"),
+    user=os.getenv("UNGIZWE_DB_USER", "ungizwe"),
+    password=os.getenv("UNGIZWE_DB_PASS", ""),
+    database=os.getenv("UNGIZWE_DB_NAME", "ungizwe"),
 )
 
 cursor = db.cursor(dictionary=True)
@@ -33,10 +36,6 @@ cursor.execute("""
 
 cursor.execute("SELECT id, brand, cry FROM cries WHERE processed = 0")
 rows = cursor.fetchall()
-
-# 1. Fetch unprocessed cries (simple version: no flag yet)
-#cursor.execute("SELECT id, brand, cry FROM cries")
-#rows = cursor.fetchall()
 
 
 def get_topic(text):

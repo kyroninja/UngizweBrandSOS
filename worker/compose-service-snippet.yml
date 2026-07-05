@@ -1,0 +1,14 @@
+  worker:
+    build:
+      context: ./worker
+    container_name: ungizwe_worker
+    restart: unless-stopped
+    networks:
+      - ungizwe_internal   # to reach ungizwe_db and redis by container name
+      - npm_default        # bridge network with real internet egress, for the OpenAI API
+    environment:
+      UNGIZWE_DB_HOST: ungizwe_db
+      UNGIZWE_DB_NAME: ungizwe
+      UNGIZWE_DB_USER: ungizwe
+      UNGIZWE_DB_PASS: changeme
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
