@@ -29,10 +29,18 @@ db = mysql.connector.connect(
 cursor = db.cursor(dictionary=True)
 
 
-# After DB connection, add a migration-safe check:
+# Migration-safe check: only add the column if it doesn't already exist.
+# (Avoids relying on "ADD COLUMN IF NOT EXISTS" syntax, which behaves
+# inconsistently across MySQL/MariaDB versions.)
 cursor.execute("""
-    ALTER TABLE cries ADD COLUMN IF NOT EXISTS processed TINYINT(1) DEFAULT 0
-""")  # MySQL 8+; for older MySQL, run manually via migration instead
+    SELECT COUNT(*) AS col_exists
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'cries'
+      AND column_name = 'processed'
+""")
+if cursor.fetchone()["col_exists"] == 0:
+    cursor.execute("ALTER TABLE cries ADD COLUMN processed TINYINT(1) DEFAULT 0")
 
 cursor.execute("SELECT id, brand, cry FROM cries WHERE processed = 0")
 rows = cursor.fetchall()

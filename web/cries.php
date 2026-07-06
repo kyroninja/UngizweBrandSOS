@@ -14,7 +14,7 @@ try {
 
     $redis = new Redis();
 
-    if ($redis->connect('127.0.0.1', 6379, 1)) {
+    if ($redis->connect(getenv('UNGIZWE_REDIS_HOST') ?: 'redis', 6379, 1)) {
         $redis->select(0);
 
         $cached = $redis->get("recent_brands");
@@ -45,10 +45,9 @@ if (empty($recent_brands)) {
                 brand,
                 topic,
                 score,
-                MAX(id) AS last_updated
+                id AS last_updated
             FROM brand_topic_scores
-            GROUP BY brand, topic
-            ORDER BY last_updated DESC
+            ORDER BY id DESC
             LIMIT 5
         ";
 
@@ -213,7 +212,7 @@ Please do not include confidential information, personal information, or defamat
 
       </div>
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-	<input type="text" name="website" style="position:absolute;left:-9999px" tabindex="-1" autocomplete="off">
+	<input type="text" name="hp_confirm_field" style="position:absolute;left:-9999px" tabindex="-1" autocomplete="off">
     </form>
 
   </div>

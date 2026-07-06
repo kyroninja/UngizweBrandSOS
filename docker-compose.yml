@@ -1,0 +1,68 @@
+services:
+
+  web:
+    build:
+      context: ./web
+    container_name: ungizwe_web
+    restart: unless-stopped
+    volumes:
+      - ./web:/var/www/html
+    networks:
+      - npm_default        # reverse proxy via Nginx Proxy Manager
+      - ungizwe_internal    # to reach db + redis
+    depends_on:
+      - db
+      - redis
+    environment:
+      UNGIZWE_DB_HOST: ungizwe_db
+      UNGIZWE_DB_NAME: ungizwe
+      UNGIZWE_DB_USER: ungizwe
+      UNGIZWE_DB_PASS: ${MYSQL_PASSWORD}
+
+  db:
+    image: mysql:8.0
+    container_name: ungizwe_db
+    restart: unless-stopped
+    networks:
+      - ungizwe_internal
+    environment:
+      MYSQL_DATABASE: ungizwe
+      MYSQL_USER: ungizwe
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: ungizwe_redis
+    restart: unless-stopped
+    networks:
+      - ungizwe_internal
+
+  worker:
+    build:
+      context: ./worker
+    container_name: ungizwe_worker
+    restart: unless-stopped
+    networks:
+      - ungizwe_internal    # to reach db + redis
+      - npm_default          # bridge network with real internet egress, for the OpenAI API
+    depends_on:
+      - db
+    environment:
+      UNGIZWE_DB_HOST: ungizwe_db
+      UNGIZWE_DB_NAME: ungizwe
+      UNGIZWE_DB_USER: ungizwe
+      UNGIZWE_DB_PASS: ${MYSQL_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+networks:
+  npm_default:
+    external: true
+  ungizwe_internal:
+    internal: true
+
+volumes:
+  db_data:

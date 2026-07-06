@@ -13,7 +13,7 @@ if (!csrf_verify($_POST['csrf_token'] ?? null)) {
 }
 
 // Honeypot — bots fill hidden fields, humans don't
-if (!empty($_POST['website'])) {
+if (!empty($_POST['hp_confirm_field'])) {
     header('Location: thank_you.html'); // silently pretend success
     exit();
 }
