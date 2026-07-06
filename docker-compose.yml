@@ -15,9 +15,6 @@ services:
       - redis
     environment:
       UNGIZWE_DB_HOST: ungizwe_db
-      UNGIZWE_DB_NAME: ungizwe
-      UNGIZWE_DB_USER: ungizwe
-      UNGIZWE_DB_PASS: ${MYSQL_PASSWORD}
 
   db:
     image: mysql:8.0
@@ -26,10 +23,8 @@ services:
     networks:
       - ungizwe_internal
     environment:
-      MYSQL_DATABASE: ungizwe
-      MYSQL_USER: ungizwe
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ungizwedb
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:
       - db_data:/var/lib/mysql
       - ./db-init:/docker-entrypoint-initdb.d:ro
@@ -53,9 +48,9 @@ services:
       - db
     environment:
       UNGIZWE_DB_HOST: ungizwe_db
-      UNGIZWE_DB_NAME: ungizwe
-      UNGIZWE_DB_USER: ungizwe
-      UNGIZWE_DB_PASS: ${MYSQL_PASSWORD}
+      UNGIZWE_DB_NAME: ungizwedb
+      UNGIZWE_DB_USER: root
+      UNGIZWE_DB_PASS: ""
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 networks:
